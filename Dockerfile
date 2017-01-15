@@ -20,8 +20,8 @@ RUN apk add --no-cache --virtual linux-headers && \
     apk add --no-cache --virtual g++
 
 RUN curl -sSL https://github.com/just-containers/s6-overlay/releases/download/${S6_OVERLAY_VERSION}/s6-overlay-amd64.tar.gz | tar xvfz - -C / && \
-    curl -sSL https://github.com/janeczku/go-dnsmasq/releases/download/${GODNSMASQ_VERSION}/go-dnsmasq-min_linux-amd64 -o /bin/go-dnsmasq && \
-    addgroup go-dnsmasq &&     adduser -D -g "" -s /bin/sh -G go-dnsmasq go-dnsmasq &&     setcap CAP_NET_BIND_SERVICE=+eip /bin/go-dnsmasq
+    curl -sSL https://github.com/janeczku/go-dnsmasq/releases/download//go-dnsmasq-min_linux-amd64 -o /bin/go-dnsmasq && \
+    addgroup go-dnsmasq && adduser -D -g "" -s /bin/sh -G go-dnsmasq go-dnsmasq && setcap CAP_NET_BIND_SERVICE=+eip /bin/go-dnsmasq
 
 
 ENV PCRE_VERSION 8.39
@@ -51,25 +51,28 @@ RUN cd /tmp/nginx-stable && \
     rm -rf /tmp/nginx-stable && rm -rf /tmp/pcre-stable
 
 RUN mkdir -p /tmp/swagger-stable && cd /tmp/swagger-stable && \
-    git clone https://github.com/swagger-api/swagger-ui.git --branch master --single-branch --depth=1 . && mkdir -p /data && cp -a dist/* /data && \
+    git clone https://github.com/swagger-api/swagger-ui.git --branch master --single-branch --depth=1 . && \
+    mkdir -p /www && \
+    cp -a dist/* /www && \
     rm -rf /tmp/swagger-stable
-
-RUN apk info
 
 # Add the files
 ADD etc /etc
-ADD data /data
+ADD data /etc/swagger
 ADD usr /usr
 
-# Remove comment to lower size
-RUN a=$(sed -e '/^[[:space:]]*$/d' -e '/^[[:space:]]*#/d' /etc/nginx/nginx.conf);echo "$a" > /etc/nginx/nginx.conf
+# create swagger schema link
+RUN cd /www && \
+    ln -sv /etc/swagger/swagger.json swagger.json && \
+    chmod +rX /etc/swagger && \
+    chmod +rX -R /etc/swagger/swagger.json
 
 # Local to broadcast
 RUN sed -i -e 's/bind 127.0.0.1/bind 0.0.0.0/' /etc/nginx/nginx.conf
 
 RUN mkdir -p /var/lib/nginx && \
     mkdir -p /var/log/nginx && \
-    chown -R nginx:nginx /data && \
+    chown -R nginx:nginx /www && \
     chown -R nginx:nginx /var/lib/nginx && \
     chown -R nginx:nginx /var/log/nginx && \
     chown -R nginx:nginx /usr/local/nginx
@@ -79,8 +82,7 @@ RUN ln -sf /dev/stdout /var/log/nginx/access.log && \
     ln -sf /dev/stderr /var/log/nginx/error.log
 
 # patch swagger file
-
-RUN perl -pi -w -e 's!http://petstore.swagger.io/v2/swagger.json!http://localhost:8080/swagger.json!g;' /data/index.html
+RUN perl -pi -w -e 's!http://petstore.swagger.io/v2/swagger.json!http://localhost:9300/swagger.json!g;' /www/index.html
 
 # cleanup
 RUN apk del linux-headers && \
@@ -93,10 +95,10 @@ RUN apk del linux-headers && \
     apk del g++ && \
     rm -rf /var/cache/*
 
-VOLUME ["/data"]
+VOLUME ["/etc/swagger"]
 
 # Expose the ports for nginx
-EXPOSE 8080
+EXPOSE 9300
 
 ENTRYPOINT ["/init"]
 CMD []
