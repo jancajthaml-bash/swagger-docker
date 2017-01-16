@@ -11,7 +11,7 @@ image:
 
 tag_git:
 	git checkout -B release/$(VERSION)
-	git branch --set-upstream-to=origin/release/$(VERSION) release/$(VERSION)
+	git push -u origin release/$(VERSION)
 	git pull --tags
 	git add --all
 	git commit -a --allow-empty-message -m ''
