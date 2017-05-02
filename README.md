@@ -2,7 +2,7 @@ Dockerized swagger.ui dashboard
 
 ## Stack
 
-Bundled Swagger UI [https://github.com/swagger-api/swagger-ui](http://nginx.org/download) served by [Nginx](http://nginx.org) running on top of lightweight [Alphine Linux](https://alpinelinux.org).
+Bundled [Swagger UI](https://github.com/swagger-api/swagger-ui) served by [Nginx](http://nginx.org) running on top of lightweight [Alphine Linux](https://alpinelinux.org).
 
 ## Usage
 
